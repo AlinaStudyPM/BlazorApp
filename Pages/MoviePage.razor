@@ -1,0 +1,328 @@
+﻿@using static MovieBlazor2.DataService;﻿
+@using MovieBlazor2.Data
+@using System.Collections.Concurrent;
+@using Microsoft.AspNetCore.Components.Web
+@using System.Diagnostics;
+@using System.Net;
+
+@page "/moviepage/{movieTitle?}/{movieCode?}"
+@inject NavigationManager NavigationManager
+
+
+<PageTitle>Поиск фильма</PageTitle>
+<h3>Фильмы</h3>
+<style>
+    /*.input-box {
+        background-color : pink;
+    }*/
+    #searchInput {
+        width : 70%;
+    }
+
+    #buttonInput {
+        width : 15%;
+        margin : 10px;
+        background-color : mediumpurple;
+        color : white;
+        border-color : white;
+    }
+
+    .output-box-movie {
+        width : 100%;
+        background-color: lavender;
+        min-width: 300px;
+        display : flex;
+        border-left-style: solid;
+        padding : 10px;
+        margin : 20px;
+        height : auto;
+    }
+
+    .image-div {
+        background-color : blueviolet;
+        display: inline-block;
+        width : 200px;
+        height : 40%;
+        min-height : 240px;
+    }
+
+    .info-div {
+        margin : 10px;
+        width : 600px;
+        display: inline-block;
+    }
+
+    .top10-div {
+        width: 300px;
+        height : 100%;
+    }
+
+    .link {
+        color: DarkSlateGray;
+        text-decoration: none;
+        cursor : pointer;
+        margin : 3px;
+    }
+    .link:hover {
+        text-decoration: underline;
+        color: DarkSlateGray;
+    }
+    .movie-link {
+        text-decoration: none;
+        color: mediumpurple;
+    }
+
+    .movie-link:hover {
+        text-decoration: underline;
+        color: mediumpurple;
+    }
+</style>
+
+<div class="input-box">
+    <input type="text" id="searchInput" placeholder="Введите название фильма" required="true" @bind="SearchedLine">
+    <button id="buttonInput" @onclick="SearchMovie">Поиск</button>
+</div>
+
+@if(true) Start();
+
+@if (!string.IsNullOrEmpty(movieTitle))
+{
+    movieTitle.Replace("%20", " ");
+    if (!string.IsNullOrEmpty(movieCode))
+    {
+        if (DataService.MovieByCode.ContainsKey(movieCode))
+        {
+            Movie searchedMovie = DataService.MovieByCode[movieCode];
+            GetImageLink(movieCode);
+            <div class="output-box-movie">
+                <div class="image-div">
+                    <img src=@movieImg width="200">
+                </div>
+                <div class="info-div">
+                    <h4>@searchedMovie.MainTitle</h4>
+                    <p>@searchedMovie.Titles</p>
+                    <p>Рейтинг: @searchedMovie.Rating</p>
+                    <p>
+                        Режиссеры:
+                        @if (searchedMovie.Director != null)
+                        {
+                            foreach (Actor dir in searchedMovie.Director)
+                            {
+                                string link = "/actorpage/" + dir.Name + "/" + dir.Code;
+                                <a class="link" @onclick="() => NavigationManager.NavigateTo(link)">@dir.Name</a>
+                            }
+                        }
+                    </p>
+                    <p>
+                        Актеры:
+                        @if (searchedMovie.Actors != null)
+                        {
+                            foreach (Actor actor in searchedMovie.Actors)
+                            {
+                                string link = "/actorpage/" + actor.Name + "/" + actor.Code;
+                                <a class="link" @onclick="() => NavigationManager.NavigateTo(link)">@actor.Name</a>
+                            }
+                        }
+                    </p>
+                    <p>
+                        Теги:
+                        @if (searchedMovie.Tags != null)
+                        {
+                            foreach (Tag tag in searchedMovie.Tags)
+                            {
+                                string link = "/tagpage/" + tag.Code;
+                                <a class="link" @onclick="() => NavigationManager.NavigateTo(link)">@tag.Name</a>
+                            }
+                        }
+                    </p>
+                </div>
+                <div class="top10-div">
+                    <p>Похожие фильмы:
+                        @if (true) searchedMovie.FindSimilarMovies();
+                        <ul>
+                            @foreach (Movie movie in searchedMovie.Top10)
+                            {
+                                string link = "/moviepage/" + movie.MainTitle.Replace(" ", "%20") + "/" + movie.Code;
+                                <li><a class="movie-link" @onclick="() => NavigationManager.NavigateTo(link)">@movie.MainTitle</a></li>
+                            }
+                        </ul>
+                    </p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <p>Фильм не найден.</p>
+        }
+    }
+    else
+    {
+        if (DataService.MovieCodesByTitle.ContainsKey(movieTitle))
+        {
+            List<string> searchedMoviesCodes = DataService.MovieCodesByTitle[movieTitle];
+            GetImagesLinks(searchedMoviesCodes);
+            foreach (string code in searchedMoviesCodes)
+            {
+                Movie searchedMovie = DataService.MovieByCode[code];
+                string linkM = "/moviepage/" + searchedMovie.MainTitle.Replace(" ", "%20") + "/" + searchedMovie.Code;
+                <div class="output-box-movie">
+                    <div class="image-div">
+                        <img src=@arrayImg[searchedMoviesCodes.IndexOf(code)] width="200">
+                    </div>
+                    <div class="info-div">
+                        <h4><a class="movie-link" @onclick="() => NavigationManager.NavigateTo(linkM)">@searchedMovie.MainTitle</a></h4>
+                        <p>Рейтинг: @searchedMovie.Rating</p>
+                        <p>
+                            Режиссеры:
+                            @if (searchedMovie.Director != null)
+                            {
+                                foreach (Actor dir in searchedMovie.Director)
+                                {
+                                    string link = "/actorpage/" + dir.Name + "/" + dir.Code;
+                                    <a class="link" @onclick="() => NavigationManager.NavigateTo(link)">@dir.Name</a>
+                                }
+                            }
+                        </p>
+                        <p>
+                            Актеры:
+                            @if (searchedMovie.Actors != null)
+                            {
+                                foreach (Actor actor in searchedMovie.Actors)
+                                {
+                                    string link = "/actorpage/" + actor.Name + "/" + actor.Code;
+                                    <a class="link" @onclick="() => NavigationManager.NavigateTo(link)">@actor.Name</a>
+                                }
+                            }
+                        </p>
+                        <p>
+                            Теги:
+                            @if (searchedMovie.Tags != null)
+                            {
+                                foreach (Tag tag in searchedMovie.Tags)
+                                {
+                                    string link = "/tagpage/" + tag.Code;
+                                    <a class="link" @onclick="() => NavigationManager.NavigateTo(link)">@tag.Name</a>
+                                }
+                            }
+                        </p>
+                    </div>
+                    <div class="top10-div">
+                        <p>
+                            Похожие фильмы:
+                            @if (true) searchedMovie.FindSimilarMovies();
+                            <ul>
+                                @foreach (Movie movie in searchedMovie.Top10)
+                                {
+                                    string link = "/moviepage/" + movie.MainTitle.Replace(" ", "%20") + "/" + movie.Code;
+                                    <li><a class="movie-link" @onclick="() => NavigationManager.NavigateTo(link)">@movie.MainTitle</a></li>
+                                }
+                            </ul>
+                        </p>
+                    </div>
+                </div>
+                index++;
+            }
+        }
+        else
+        {
+            <p>Фильм не найден.</p>
+        }
+    }
+}
+
+@code {
+    public Stopwatch StopWatch = new Stopwatch();
+
+    public void Start()
+    {
+        StopWatch.Start();
+        DataService.EnsureCreated(StopWatch);
+    }
+    string apiKey = "14d808f4";
+    public Movie searchedMovie;
+    public string movieImg;
+    public string[] arrayImg;
+    int index;
+    [Parameter]
+    public string? movieCode { get; set; }
+    [Parameter]
+    public string? movieTitle { get; set; }
+    public string SearchedLine = "";
+    public void SearchMovie()
+    {
+        index = 0;
+        if (DataService.MovieCodesByTitle.TryGetValue(SearchedLine, out List<string> codes))
+        {
+            //searchedMovie = DataService.MovieByCode[code];
+            arrayImg = new string[codes.Count];
+            string url = $"/moviepage/{SearchedLine.Replace(" ", "%20")}";
+            NavigationManager.NavigateTo(url);
+        }
+        else
+        {
+            //searchedMovie = new Movie("0", "NotFounded");
+            NavigationManager.NavigateTo("/moviepage/0");
+            //throw new Exception();
+        }
+    }
+
+    public async void GetImageLink(string movieCode)
+    {
+        using (WebClient client = new WebClient())
+        {
+            string apiKey = "14d808f4";
+            string url = $"http://www.omdbapi.com/?i={movieCode}&apikey={apiKey}";
+            string info = client.DownloadString(url);
+            int start = info.IndexOf("Poster") + 9;
+            int end = info.IndexOf("Ratings") - 3;
+            movieImg = info.Substring(start, end - start);
+        }
+    }
+
+    public async Task GetImagesLinks(List<string> movieCodes)
+    {
+        string apiKey = "14d808f4";
+        arrayImg = new string[movieCodes.Count];
+        Parallel.ForEach(movieCodes, async code =>
+        {
+            string url = $"http://www.omdbapi.com/?i={code}&apikey={apiKey}";
+            try
+            {
+                using (WebClient client = new WebClient())
+                {
+                    string info = client.DownloadString(url);
+                    int start = info.IndexOf("Poster") + 9;
+                    int end = info.IndexOf("Ratings") - 3;
+                    arrayImg[movieCodes.IndexOf(code)] = info.Substring(start, end - start);
+                }
+            }
+            catch
+            {
+                arrayImg[movieCodes.IndexOf(code)] = "";
+            }
+        });
+            /*foreach (string code in movieCodes)
+            {
+                string url = $"http://www.omdbapi.com/?i={movieCode}&apikey={apiKey}";
+                try
+                {
+                    var response = client.GetAsync(url).GetAwaiter().GetResult();
+                    if (response.IsSuccessStatusCode)
+                    {
+                        string info = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
+                        int start = info.IndexOf("Poster") + 9;
+                        int end = info.IndexOf("Ratings") - 3;
+                        arrayImg[movieCodes.IndexOf(code)] = info.Substring(start, end - start);
+                    }
+                    else
+                    {
+                        arrayImg[movieCodes.IndexOf(code)] = "";
+                    }
+                }
+                catch
+                {
+                    arrayImg[movieCodes.IndexOf(code)] = "";
+                }
+            }*/
+    }
+}

@@ -1,0 +1,182 @@
+﻿@using MovieBlazor2.Data
+@using System.Collections.Concurrent;
+@using System.Diagnostics;
+
+
+@page "/actorpage/{actorName?}/{actorCode?}"
+@inject NavigationManager NavigationManager
+
+<PageTitle>Поиск актера</PageTitle>
+<h3>Актеры</h3>
+
+<div class="input-box">
+    <input type="text" id="searchInput" placeholder="Введите имя актера" required="true" @bind="SearchedLine">
+    <button id="buttonInput" @onclick="SearchActor">Поиск</button>
+</div>
+
+<style>
+    #searchInput {
+        width: 70%;
+    }
+
+    #buttonInput {
+        width: 15%;
+        margin: 10px;
+        background-color: mediumpurple;
+        color: white;
+        border-color: white;
+    }
+    .link {
+        color: DarkSlateGray;
+        text-decoration: none;
+        cursor: pointer;
+        margin: 3px;
+    }
+
+    .link:hover {
+        text-decoration: underline;
+        color: DarkSlateGray;
+    }
+
+    .actor-link {
+        text-decoration: none;
+        color: mediumpurple;
+    }
+
+    .actor-link:hover{
+        text-decoration: underline;
+        color: mediumpurple;
+    }
+
+    .output-box-actor {
+        background-color: lavender;
+        min-width: 200px;
+        display: flex;
+        margin : 10px;
+    }
+
+    .info-div {
+        margin: 10px;
+        //background-color : skyblue;
+        min-width: 500px;
+    }
+</style>
+
+@if (true) Start();
+
+@if (!string.IsNullOrEmpty(actorName))
+{
+    actorName.Replace("%20", " ");
+    if (!string.IsNullOrEmpty(actorCode))
+    {
+        if (DataService.ActorByCode.ContainsKey(actorCode))
+        {
+            Actor currenntActor = DataService.ActorByCode[actorCode];
+            <div class="output-box-actor">
+                <div class="info-div">
+                    <h4>@currenntActor.Name</h4>
+                    <p>Снял фильмы:
+                        @if (currenntActor.DirectedMovies != null)
+                        {
+                            <ul>
+                                @foreach (Movie movie in currenntActor.DirectedMovies)
+                                {
+                                    string link = "/moviepage/" + movie.MainTitle.Replace(" ", "%20") + "/" + movie.Code;
+                                    <li><a class="link" @onclick="() => NavigationManager.NavigateTo(link)">@movie.MainTitle</a></li>
+                                }
+                            </ul>
+                        }
+                    </p>
+                    <p>Снимался фильмах:
+                        @if (currenntActor.Movies != null)
+                        {
+                            <ul>
+                                @foreach (Movie movie in currenntActor.Movies)
+                                {
+                                    string link = "/moviepage/" + movie.MainTitle.Replace(" ", "%20") + "/" + movie.Code;
+                                    <li><a class="link" @onclick="() => NavigationManager.NavigateTo(link)">@movie.MainTitle</a></li>
+                                }
+                            </ul>
+                        }
+                    </p>
+                </div>
+            </div>
+        }
+        else
+        {
+            <p>Актер не найден</p>
+        }
+    }
+    else
+    {
+        HashSet<string> searchedActorsCodes = DataService.ActorsCodesByName[actorName];
+        foreach(string code in searchedActorsCodes)
+        {
+            Actor currenntActor = DataService.ActorByCode[code];
+            if (currenntActor.DirectedMovies != null || currenntActor.Movies != null)
+            {
+                string linkA = "/actorpage/" + currenntActor.Name.Replace(" ", "%20") + "/" + currenntActor.Code;
+                <div class="output-box-actor">
+                    <div class="info-div">
+                        <h4><a class="actor-link" @onclick="() => NavigationManager.NavigateTo(linkA)">@currenntActor.Name</a></h4>
+                        <p>
+                            Снял фильмы:
+                            @if (currenntActor.DirectedMovies != null)
+                            {
+                                <ul>
+                                    @foreach (Movie movie in currenntActor.DirectedMovies)
+                                    {
+                                        string linkM = "/moviepage/" + movie.MainTitle.Replace(" ", "%20") + "/" + movie.Code;
+                                        <li><a class="link" @onclick="() => NavigationManager.NavigateTo(linkM)">@movie.MainTitle</a></li>
+                                    }
+                                </ul>
+                            }
+                        </p>
+                        <p>
+                            Снимался фильмах:
+                            @if (currenntActor.Movies != null)
+                            {
+                                <ul>
+                                    @foreach (Movie movie in currenntActor.Movies)
+                                    {
+                                        string link = "/moviepage/" + movie.MainTitle.Replace(" ", "%20") + "/" + movie.Code;
+                                        <li><a class="link" @onclick="() => NavigationManager.NavigateTo(link)">@movie.MainTitle</a></li>
+                                    }
+                                </ul>
+                            }
+                        </p>
+                </div>
+            </div>
+            }
+        }
+    }
+}
+
+@code {
+    [Parameter]
+    public string? actorName { get; set; }
+    [Parameter]
+    public string? actorCode { get; set; }
+
+    public Stopwatch StopWatch = new Stopwatch();
+
+    public void Start()
+    {
+        StopWatch.Start();
+        DataService.EnsureCreated(StopWatch);
+    }
+    public string SearchedLine;
+
+    public void SearchActor()
+    {
+        if (DataService.ActorsCodesByName.TryGetValue(SearchedLine, out HashSet<string> codesOfActors))
+        {
+            string link = "/actorpage/" + SearchedLine.Replace(" ","%20");
+            NavigationManager.NavigateTo(link);
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/actorpage/0");
+        }
+    }
+}

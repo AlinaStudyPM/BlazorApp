@@ -1,0 +1,96 @@
+﻿﻿@using MovieBlazor2.Data
+@using static MovieBlazor2.DataService;
+@using System.Diagnostics;
+
+@page "/tagpage/{tagCode?}"
+@inject NavigationManager NavigationManager
+
+<PageTitle>Теги фильмов</PageTitle>
+<h3>Теги фильмов</h3>
+
+<div class="input-box">
+    <input type="text" id="searchInput" placeholder="Введите название тега" required="true" @bind="SearchedLine">
+    <button id="buttonInput" @onclick="SearchTag">Поиск</button>
+</div>
+
+<style>
+    #searchInput {
+        width: 70%;
+    }
+
+    #buttonInput {
+        width: 15%;
+        margin: 10px;
+        background-color: mediumpurple;
+        color: white;
+        border-color: white;
+    }
+    .output-box-tag {
+        background-color : white;
+    }
+    .tag-link {
+        font-size : 16px;
+        color : saddlebrown;
+        text-decoration : none;
+    }
+    .tag-link:hover {
+        text-decoration: underline;
+            color: saddlebrown;
+    }
+</style>
+
+@if(true) Start();
+
+@if (!string.IsNullOrEmpty(tagCode))
+{
+    if (DataService.TagByCode.ContainsKey(tagCode))
+    {
+        Tag searchedTag = DataService.TagByCode[tagCode];
+        <h4>@searchedTag.Name</h4>
+        <div class="output-box-tag">
+            @if (searchedTag.Movies != null)
+            {
+                <ul>
+                @foreach (Movie movie in searchedTag.Movies)
+                    {
+                        string link = "/moviepage/" + movie.MainTitle.Replace(" ", "%20") + "/" + movie.Code;
+                        <li><a class="tag-link" @onclick="() => NavigationManager.NavigateTo(link)">@movie.MainTitle</a></li>
+                    }
+                </ul>
+            }
+        </div>
+    }
+    else
+    {
+        <p>Тег не найден</p>
+    }
+}
+
+
+@code {
+    public Stopwatch StopWatch = new Stopwatch();
+
+    public void Start()
+    {
+        StopWatch.Start();
+        DataService.EnsureCreated(StopWatch);
+    }
+    [Parameter]
+    public string? tagCode {get; set;}
+
+    public Tag searchedTag;
+    public string SearchedLine = "";
+    public void SearchTag()
+    {
+        if (DataService.TagCodeByName.TryGetValue(SearchedLine, out string code))
+        {
+            searchedTag = DataService.TagByCode[code];
+            string url = $"/tagpage/{searchedTag.Code}";
+            NavigationManager.NavigateTo(url);
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/tagpage/n");
+        }
+    }
+}
