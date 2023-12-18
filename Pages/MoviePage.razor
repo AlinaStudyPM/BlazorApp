@@ -301,28 +301,5 @@
                 arrayImg[movieCodes.IndexOf(code)] = "";
             }
         });
-            /*foreach (string code in movieCodes)
-            {
-                string url = $"http://www.omdbapi.com/?i={movieCode}&apikey={apiKey}";
-                try
-                {
-                    var response = client.GetAsync(url).GetAwaiter().GetResult();
-                    if (response.IsSuccessStatusCode)
-                    {
-                        string info = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
-                        int start = info.IndexOf("Poster") + 9;
-                        int end = info.IndexOf("Ratings") - 3;
-                        arrayImg[movieCodes.IndexOf(code)] = info.Substring(start, end - start);
-                    }
-                    else
-                    {
-                        arrayImg[movieCodes.IndexOf(code)] = "";
-                    }
-                }
-                catch
-                {
-                    arrayImg[movieCodes.IndexOf(code)] = "";
-                }
-            }*/
     }
 }
